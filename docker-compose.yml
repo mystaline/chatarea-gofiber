@@ -1,0 +1,52 @@
+services:
+  chatarea-gofiber:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      APP_PORT: "3000" # expose GoFiber API ke host
+      DB_HOST: "pgsql" # nama service PostgreSQL sebagai hostname
+      DB_PORT: "5432"
+      DB_USERNAME: "sail"
+      DB_PASSWORD: "password"
+      DB_DATABASE: "chatarea"
+    volumes:
+      - ".:/app"
+    networks:
+      - chatarea-net
+    depends_on:
+      - pgsql
+  pgsql:
+    image: "postgres:17"
+    ports:
+      - "${FORWARD_DB_PORT:-5432}:5432"
+    environment:
+      PGPASSWORD: "${DB_PASSWORD:-secret}"
+      POSTGRES_DB: "${DB_DATABASE}"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-secret}"
+    volumes:
+      - "sail-pgsql:/var/lib/postgresql/data"
+    networks:
+      - chatarea-net
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - "-q"
+        - "-d"
+        - "${DB_DATABASE}"
+        - "-U"
+        - "${DB_USERNAME}"
+      retries: 3
+      timeout: 5s
+networks:
+  chatarea-net:
+    driver: bridge
+volumes:
+  sail-pgsql:
+    external: true
