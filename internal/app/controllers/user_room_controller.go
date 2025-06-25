@@ -35,16 +35,17 @@ func GetMyRooms(c *fiber.Ctx) error {
 		"user_id": utils.GetExactMatchFilter(user.ID),
 	}
 
-	if query.IsManaged != "" {
-		filterQuery["room.creator_id"] = utils.GetExactMatchFilter(user.ID)
+	if query.IsManaged == "true" {
+		filterQuery["rooms.creator_id"] = utils.GetExactMatchFilter(user.ID)
 	}
 
 	if _, err := useCase.Invoke(usecase.GetMyRoomsParams{
 		Context:  c,
 		Response: &response,
 		Options: service.ServiceOption{
-			Filter:  filterQuery,
-			Preload: []string{"User", "Room", "Room.Creator"},
+			Filter:    filterQuery,
+			Preload:   []string{"User", "Room.Creator"},
+			JoinTable: []string{"JOIN rooms ON rooms.id = room_members.room_id"},
 		},
 	}); err != nil {
 		return c.Status(fiber.ErrInternalServerError.Code).

@@ -10,8 +10,9 @@ import (
 )
 
 type ServiceOption struct {
-	Filter  map[string]utils.EloquentQuery
-	Preload []string
+	Filter    map[string]utils.EloquentQuery
+	Preload   []string
+	JoinTable []string
 }
 
 type BaseService interface {
@@ -38,6 +39,12 @@ func (g *BaseRepository) FindMany(
 
 	queried := utils.ApplyFilter(res, option.Filter)
 	fmt.Println("queried", queried)
+
+	if len(option.JoinTable) > 0 {
+		for _, each := range option.JoinTable {
+			queried = queried.Joins(each)
+		}
+	}
 
 	if len(option.Preload) > 0 {
 		for _, each := range option.Preload {
