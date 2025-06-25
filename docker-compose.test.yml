@@ -1,0 +1,47 @@
+services:
+  chatarea-gofiber-test:
+    build:
+      context: "."
+      dockerfile: Dockerfile.test
+    env_file:
+      - .env.test
+    environment:
+      APP_PORT: "3000" # expose GoFiber API ke host
+      DB_HOST: "pgsql-test" # nama service PostgreSQL sebagai hostname
+      DB_PORT: "5432"
+      DB_USERNAME: "sail"
+      DB_PASSWORD: "password"
+      DB_DATABASE: "chatarea-test"
+      JWT_SECRET: testingsecret
+    volumes:
+      - ".:/app"
+    depends_on:
+      pgsql-test:
+        condition: service_healthy
+    working_dir: "/app"
+    command: go test ./... -v -coverprofile=coverage.out
+    tty: true
+  pgsql-test:
+    image: "postgres:17"
+    env_file:
+      - .env.test
+    environment:
+      POSTGRES_DB: "chatarea-test"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-secret}"
+    volumes:
+      - "sail-pgsql-test:/var/lib/postgresql/data"
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - "-d"
+        - "chatarea-test"
+        - "-U"
+        - "sail"
+      retries: 3
+      timeout: 5s
+volumes:
+  sail-pgsql-test:

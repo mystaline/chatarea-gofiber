@@ -1,0 +1,6 @@
+# Dockerfile.test
+FROM golang:1.24.4
+WORKDIR /app
+COPY . .
+RUN go mod tidy
+CMD ["go", "test", "./internal/app", "./internal/router", "-v", "-coverprofile=coverage.out"]
