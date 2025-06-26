@@ -17,7 +17,7 @@ type GetRoomInfoParams struct {
 type GetRoomInfoUseCase struct {
 	RoomService     service.BaseService
 	UserService     service.BaseService
-	UserRoomService service.BaseService
+	RoomMemberService service.BaseService
 	ServiceProvider provider.ServiceProvider
 }
 
@@ -30,7 +30,7 @@ func MakeGetRoomInfoUseCase(serviceProvider provider.ServiceProvider) *GetRoomIn
 func (u *GetRoomInfoUseCase) InitServices() {
 	u.RoomService = u.ServiceProvider.MakeService(config.GetDB(), "rooms")
 	u.UserService = u.ServiceProvider.MakeService(config.GetDB(), "users")
-	u.UserRoomService = u.ServiceProvider.MakeService(config.GetDB(), "room_members")
+	u.RoomMemberService = u.ServiceProvider.MakeService(config.GetDB(), "room_members")
 }
 
 func (u *GetRoomInfoUseCase) Invoke(params GetRoomInfoParams) (bool, error) {

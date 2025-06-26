@@ -23,7 +23,7 @@ type CreateRoomParams struct {
 type CreateRoomUseCase struct {
 	RoomService     service.BaseService
 	UserService     service.BaseService
-	UserRoomService service.BaseService
+	RoomMemberService service.BaseService
 	ServiceProvider provider.ServiceProvider
 }
 
@@ -36,7 +36,7 @@ func MakeCreateRoomUseCase(serviceProvider provider.ServiceProvider) *CreateRoom
 func (u *CreateRoomUseCase) InitServices() {
 	u.RoomService = u.ServiceProvider.MakeService(config.GetDB(), "rooms")
 	u.UserService = u.ServiceProvider.MakeService(config.GetDB(), "users")
-	u.UserRoomService = u.ServiceProvider.MakeService(config.GetDB(), "room_members")
+	u.RoomMemberService = u.ServiceProvider.MakeService(config.GetDB(), "room_members")
 }
 
 func (u *CreateRoomUseCase) Invoke(params CreateRoomParams) (bool, error) {
@@ -62,17 +62,18 @@ func (u *CreateRoomUseCase) Invoke(params CreateRoomParams) (bool, error) {
 			Filter: map[string]utils.EloquentQuery{
 				"id": utils.GetExactMatchFilter(params.Body.PersonID),
 			},
+			Select: []string{"id"},
 		}); err != nil {
 			return false, errors.New("user not found")
 		}
 
-		targetPersonRoom := models.UserRoom{
+		targetPersonRoom := models.RoomMember{
 			ID:     uuid.New(),
 			UserID: targetPerson.ID,
 			RoomID: newRoom.ID,
 		}
 
-		if err := u.UserRoomService.InsertOne(params.Context, &targetPersonRoom, service.ServiceOption{}); err != nil {
+		if err := u.RoomMemberService.InsertOne(params.Context, &targetPersonRoom, service.ServiceOption{}); err != nil {
 			return false, err
 		}
 	} else if params.Body.Name != "" {
@@ -83,13 +84,13 @@ func (u *CreateRoomUseCase) Invoke(params CreateRoomParams) (bool, error) {
 		}
 	}
 
-	userRoom := models.UserRoom{
+	userRoom := models.RoomMember{
 		ID:     uuid.New(),
 		UserID: user.ID,
 		RoomID: newRoom.ID,
 	}
 
-	if err := u.UserRoomService.InsertOne(params.Context, &userRoom, service.ServiceOption{}); err != nil {
+	if err := u.RoomMemberService.InsertOne(params.Context, &userRoom, service.ServiceOption{}); err != nil {
 		return false, err
 	}
 
