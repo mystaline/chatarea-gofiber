@@ -41,6 +41,7 @@ func (u *EditRoomUseCase) Invoke(params EditRoomParams) (bool, error) {
 			Filter: map[string]utils.EloquentQuery{
 				"id": utils.GetExactMatchFilter(roomId),
 			},
+			Select: utils.ExtractSelectColumns[dto.EditRoomBody](),
 		}); err != nil {
 			return false, err
 		}

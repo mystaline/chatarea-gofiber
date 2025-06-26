@@ -39,7 +39,9 @@ func (u *EditProfileUseCase) Invoke(params EditProfileParams) (bool, error) {
 		params.Body.Password = hashedPassword
 	}
 
-	if err := u.UserService.UpdateOne(params.Response, params.Context, params.Body, service.ServiceOption{}); err != nil {
+	if err := u.UserService.UpdateOne(params.Response, params.Context, params.Body, service.ServiceOption{
+		Select: utils.ExtractSelectColumns[dto.EditProfileBody](),
+	}); err != nil {
 		return false, errors.New("failed to edit profile")
 	}
 

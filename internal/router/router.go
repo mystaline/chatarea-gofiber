@@ -50,8 +50,8 @@ func SetupRoutes(app *fiber.App) {
 	rooms.Put("/:id/invite", controllers.Me)     // inviteUsersToRoom
 	rooms.Delete("/:id/kick", controllers.Me)    // kickUserFromRoom
 	rooms.Get("/:id", controllers.GetRoomInfo)   // getRoomInfo✅
-	rooms.Put("/:id", controllers.EditRoomInfo)  // editRoomInfo✅
-	rooms.Delete("/:id", controllers.DeleteRoom) // deleteRoom✅
+	rooms.Put("/:id", controllers.EditRoomInfo)  // editRoomInfo
+	rooms.Delete("/:id", controllers.DeleteRoom) // deleteRoom
 
 	roomChats.Get("/", controllers.Me)              // getChats
 	roomChats.Post("/", controllers.Me)             // sendChat
