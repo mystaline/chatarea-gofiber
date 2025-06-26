@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/mystaline/chatarea-gofiber/internal/app/models"
+	"github.com/mystaline/chatarea-gofiber/internal/app/dto"
 	"github.com/mystaline/chatarea-gofiber/internal/app/provider"
 	"github.com/mystaline/chatarea-gofiber/internal/app/service"
 	"github.com/mystaline/chatarea-gofiber/internal/config"
@@ -11,12 +11,12 @@ import (
 type GetMyRoomsParams struct {
 	Context  *fiber.Ctx
 	Options  service.ServiceOption
-	Response *[]models.UserRoom
+	Response *[]dto.MyRoom
 }
 
 type GetMyRoomsUseCase struct {
-	UserRoomService service.BaseService
-	ServiceProvider provider.ServiceProvider
+	RoomMemberService service.BaseService
+	ServiceProvider   provider.ServiceProvider
 }
 
 func MakeGetMyRoomsUseCase(serviceProvider provider.ServiceProvider) *GetMyRoomsUseCase {
@@ -26,11 +26,11 @@ func MakeGetMyRoomsUseCase(serviceProvider provider.ServiceProvider) *GetMyRooms
 }
 
 func (u *GetMyRoomsUseCase) InitServices() {
-	u.UserRoomService = u.ServiceProvider.MakeService(config.GetDB(), "room_members")
+	u.RoomMemberService = u.ServiceProvider.MakeService(config.GetDB(), "room_members")
 }
 
 func (u *GetMyRoomsUseCase) Invoke(params GetMyRoomsParams) (bool, error) {
-	if err := u.UserRoomService.FindMany(params.Response, params.Context, params.Options); err != nil {
+	if err := u.RoomMemberService.FindMany(params.Response, params.Context, params.Options); err != nil {
 		return false, err
 	}
 

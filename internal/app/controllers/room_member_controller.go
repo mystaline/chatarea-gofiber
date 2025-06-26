@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mystaline/chatarea-gofiber/internal/app/dto"
-	"github.com/mystaline/chatarea-gofiber/internal/app/models"
 	"github.com/mystaline/chatarea-gofiber/internal/app/provider"
 	"github.com/mystaline/chatarea-gofiber/internal/app/service"
 	"github.com/mystaline/chatarea-gofiber/internal/app/usecase"
@@ -13,7 +12,7 @@ import (
 )
 
 func GetMyRooms(c *fiber.Ctx) error {
-	var response []models.UserRoom
+	var response []dto.MyRoom
 	user, ok := c.Locals("user").(*dto.GetMyProfileResponse)
 	if !ok {
 		return c.Status(fiber.ErrInternalServerError.Code).
@@ -43,9 +42,9 @@ func GetMyRooms(c *fiber.Ctx) error {
 		Context:  c,
 		Response: &response,
 		Options: service.ServiceOption{
-			Filter:  filterQuery,
-			Preload: []string{"User", "Room.Creator"},
-			Joins:   []string{"JOIN rooms ON rooms.id = room_members.room_id"},
+			Filter: filterQuery,
+			Joins:  []string{"JOIN rooms ON rooms.id = room_members.room_id", "JOIN users ON users.id = rooms.creator_id"},
+			Select: utils.ExtractSelectColumns[dto.MyRoom](),
 		},
 	}); err != nil {
 		return c.Status(fiber.ErrInternalServerError.Code).
@@ -54,9 +53,26 @@ func GetMyRooms(c *fiber.Ctx) error {
 
 	fmt.Println("response", response)
 
+	var data []dto.GetMyRoomsResponse
+	for _, each := range response {
+		data = append(data, dto.GetMyRoomsResponse{
+			ID:      each.ID,
+			RoomID:  each.RoomID,
+			Name:    each.Name,
+			Type:    each.Type,
+			Address: each.Address,
+			Creator: dto.Creator{
+				ID:   each.CreatorID,
+				Name: each.Name,
+			},
+			CreatedAt: each.CreatedAt,
+			UpdatedAt: each.UpdatedAt,
+		})
+	}
+
 	return c.JSON(fiber.Map{
 		"message": "Successfully get my rooms",
-		"data":    response,
+		"data":    data,
 	})
 }
 

@@ -10,12 +10,15 @@ import (
 )
 
 type ServiceOption struct {
-	Filter    map[string]utils.EloquentQuery
-	Preload   []string
-	JoinTable []string
+	Filter  map[string]utils.EloquentQuery
+	Preload []string
+	Joins   []string
+	Select  []string
 }
 
 type BaseService interface {
+	SQLBuilder(option ServiceOption) *gorm.DB
+
 	FindMany(v interface{}, c *fiber.Ctx, option ServiceOption) error
 	FindOne(v any, c *fiber.Ctx, option ServiceOption) error
 	Count(v *int64, c *fiber.Ctx, option ServiceOption) error
@@ -29,21 +32,20 @@ type BaseRepository struct {
 	tableName string
 }
 
-// FindMany implements BaseService.
-func (g *BaseRepository) FindMany(
-	v interface{},
-	c *fiber.Ctx,
-	option ServiceOption,
-) error {
+func (g *BaseRepository) SQLBuilder(option ServiceOption) *gorm.DB {
 	res := g.db.Table(g.tableName)
 
 	queried := utils.ApplyFilter(res, option.Filter)
-	fmt.Println("queried", queried)
 
-	if len(option.JoinTable) > 0 {
-		for _, each := range option.JoinTable {
+	if len(option.Joins) > 0 {
+		for _, each := range option.Joins {
 			queried = queried.Joins(each)
 		}
+	}
+
+	fmt.Println("option.Select", option.Select)
+	if len(option.Select) > 0 {
+		queried = queried.Select(option.Select)
 	}
 
 	if len(option.Preload) > 0 {
@@ -53,10 +55,21 @@ func (g *BaseRepository) FindMany(
 		}
 	}
 
-	if err := queried.Find(v).Error; err != nil {
+	return queried
+}
+
+// FindMany implements BaseService.
+func (g *BaseRepository) FindMany(
+	v interface{},
+	c *fiber.Ctx,
+	option ServiceOption,
+) error {
+	sqlBuilt := g.SQLBuilder(option)
+
+	if err := sqlBuilt.Find(v).Error; err != nil {
 		return errors.New("failed to retrieve data")
 	}
-	fmt.Println("v", v)
+	fmt.Printf("%+v\n", v)
 
 	return nil
 }
@@ -67,20 +80,9 @@ func (g *BaseRepository) FindOne(
 	c *fiber.Ctx,
 	option ServiceOption,
 ) error {
-	res := g.db.Table(g.tableName)
+	sqlBuilt := g.SQLBuilder(option)
 
-	queried := utils.ApplyFilter(res, option.Filter)
-	if queried.Error != nil {
-		return errors.New("failed to apply filter")
-	}
-
-	if len(option.Preload) > 0 {
-		for _, each := range option.Preload {
-			queried.Preload(each)
-		}
-	}
-
-	if queried.First(v).Error != nil {
+	if sqlBuilt.First(v).Error != nil {
 		return errors.New("failed to retrieve data")
 	}
 
@@ -93,11 +95,9 @@ func (g *BaseRepository) Count(
 	c *fiber.Ctx,
 	option ServiceOption,
 ) error {
-	res := g.db.Table(g.tableName)
+	sqlBuilt := g.SQLBuilder(option)
 
-	queried := utils.ApplyFilter(res, option.Filter)
-
-	if queried.Count(v).Error != nil {
+	if sqlBuilt.Count(v).Error != nil {
 		return errors.New("failed to retrieve data")
 	}
 
@@ -110,8 +110,9 @@ func (g *BaseRepository) InsertOne(
 	body interface{},
 	option ServiceOption,
 ) error {
-	fmt.Println("body", body)
-	if err := g.db.Table(g.tableName).Create(body).Error; err != nil {
+	sqlBuilt := g.SQLBuilder(option)
+
+	if err := sqlBuilt.Create(body).Error; err != nil {
 		return err
 	}
 
@@ -129,7 +130,7 @@ func (g *BaseRepository) UpdateOne(
 		return err
 	}
 
-	if res := g.db.Table(g.tableName).Model(v).Updates(body); res.Error != nil {
+	if sqlBuilt := g.SQLBuilder(option).Model(v).Updates(body); sqlBuilt.Error != nil {
 		return errors.New("failed to edit data")
 	}
 
@@ -156,7 +157,7 @@ func (g *BaseRepository) DeleteOne(
 
 func MakeService(db *gorm.DB, tableName string) BaseService {
 	return &BaseRepository{
-		db:        db,
+		db:        db.Debug(),
 		tableName: tableName,
 	}
 }
