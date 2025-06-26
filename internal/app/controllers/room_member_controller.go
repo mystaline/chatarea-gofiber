@@ -43,9 +43,9 @@ func GetMyRooms(c *fiber.Ctx) error {
 		Context:  c,
 		Response: &response,
 		Options: service.ServiceOption{
-			Filter:    filterQuery,
-			Preload:   []string{"User", "Room.Creator"},
-			JoinTable: []string{"JOIN rooms ON rooms.id = room_members.room_id"},
+			Filter:  filterQuery,
+			Preload: []string{"User", "Room.Creator"},
+			Joins:   []string{"JOIN rooms ON rooms.id = room_members.room_id"},
 		},
 	}); err != nil {
 		return c.Status(fiber.ErrInternalServerError.Code).
